@@ -2,8 +2,12 @@ import numpy as np
 import pandas as pd
 import KeyencePointCloud
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+from stl import mesh
 
 # Define file/filepath of point cloud data in CSV form
+import STLComparison
+
 CSV_1 = 'Z3_48.csv'
 CSV_2 = 'Z3_71.csv'
 
@@ -11,7 +15,7 @@ CSV_2 = 'Z3_71.csv'
 Z_offset_mm = 0.23*25.4
 
 # Define resolution multiplier. This has the effect of reducing the data resolution by a factor of n
-n_res = 16
+n_res = 32
 
 # Define resolution to use from scan data. Lower resolution --> less accuracy but less processing time
 Res_mm = 0.0125*n_res
@@ -28,8 +32,8 @@ d_zero_plane = 2.5
 
 # Set plot toggle ("on"/"off"). Note that plotting while using a low n_res value will not work since it is too many points for
 # matplotlib to put on the scatter plot.
-plot_toggle = "on"
-#plot_toggle = "off"
+# plot_toggle = "on"
+plot_toggle = "off"
 
 # Convert CSV files to 3 x n arrays
 PointCloud1 = KeyencePointCloud.CSV_Array_Convert(CSV_1, Res_mm, n_res)
@@ -137,6 +141,27 @@ if plot_toggle == "on":
 
     # Use this view to compare to raw combined point cloud
     ax.view_init(elev=0., azim=0)
+
+# STL Comparison between candidate and reference STL
+mesh_c, mesh_ref, VolDiff, SurfAreaDiff, MaxHausdorffData = STLComparison.Compare('FinalProjectPart_short.stl', 'FinalProjectPart_shorter.stl')
+
+# Plot STL files
+figure = plt.figure()
+axes = mplot3d.Axes3D(figure)
+axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_c.vectors, alpha=0.1, linewidths=1, facecolors='b'))
+axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_ref.vectors, alpha=0.1, linewidths=1, facecolors='g'))
+axes.plot3D([MaxHausdorffData[1][0], MaxHausdorffData[2][0]], [MaxHausdorffData[1][1], MaxHausdorffData[2][1]], [MaxHausdorffData[1][2], MaxHausdorffData[2][2]], "red")
+scale = mesh_c.points.flatten()
+axes.auto_scale_xyz(scale, scale, scale)
+figure.suptitle("STL Plot")
+axes.set_xlabel("X")
+axes.set_ylabel("Y")
+axes.set_zlabel("Z")
+
+print("STL Comparison Data")
+print("Volume Difference (mm3): ", VolDiff)
+print("Surface Area Difference (mm2): ", SurfAreaDiff)
+print("Maximum Hausdorff Distance (mm): ", MaxHausdorffData[0])
 
 plt.show()
 

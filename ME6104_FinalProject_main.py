@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
 
+from NURBS_Calculations import NURBS
+
 # Define file/filepath of point cloud data in CSV form
 import STLComparison
 
@@ -68,100 +70,110 @@ if plot_toggle == "on":
 # Combine scans to form one point cloud that is aligned to point cloud.
 RawStackedPointCloud, CombinedPointCloud, ZeroPlaneXYCorners, ZeroPlanePoints, GlobalZeroPlane, AlignedCombined_PC = KeyencePointCloud.CombinePC([PointCloud1, PointCloud2], n_interpolate, tol_interpolate, d_zero_plane, plot_toggle)
 
+#initialize the nurbs calculation class
+desired_data_dims=[103,32]
+numu,numw=50,50
+nurbs=NURBS(AlignedCombined_PC,numu,numw,desired_data_dims,3,3,factor=4)
+output=nurbs.nurbs_calc()
+nurbs.plot_surfaces('nurbs',1,'NURBS surface')
+nurbs.plot_points('reduced data',2,'Reduced data')
+plt.show()
+
 # Plot raw combined point cloud data
+# if plot_toggle == "on":
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     ax.scatter(RawStackedPointCloud[:, 0], RawStackedPointCloud[:, 1], RawStackedPointCloud[:, 2], marker='.')
+#     ax.set_xlabel("X (mm)")
+#     ax.set_ylabel("Y (mm)")
+#     ax.set_zlabel("Z (mm)")
+#     ax.set_title("Raw Combined Point Cloud")
+
+#     # Use this view to compare to interpolated combined point cloud
+#     ax.view_init(elev=0., azim=0)
+
+# # Plot linearly interpolated combined point cloud data
+# if plot_toggle == "on":
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
+#     ax.set_xlabel("X (mm)")
+#     ax.set_ylabel("Y (mm)")
+#     ax.set_zlabel("Z (mm)")
+#     ax.set_title("Linearly Interpolated Combined Point Cloud")
+
+#     # Use this view to compare to raw combined point cloud
+#     ax.view_init(elev=0., azim=0)
+
+# # Plot linearly interpolated combined point cloud data with corner zero plan data outlined
+# if plot_toggle == "on":
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
+#     ax.scatter(ZeroPlaneXYCorners[:, 0], ZeroPlaneXYCorners[:, 1], [1, 1, 1, 1], color='red', s=20)
+#     ax.scatter(ZeroPlanePoints[:, 0], ZeroPlanePoints[:, 1],  ZeroPlanePoints[:, 2], color='green', s=20)
+#     ax.set_xlabel("X (mm)")
+#     ax.set_ylabel("Y (mm)")
+#     ax.set_zlabel("Z (mm)")
+#     ax.set_title("Linearly Interpolated Combined Point Cloud with Corner Zero Plane Data")
+
+#     # Use this view to show zero plane data outlines
+#     ax.view_init(elev=90., azim=-90)
+
+# # Plot linearly interpolated combined point cloud data with global zero plane
+# if plot_toggle == "on":
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
+#     xlim = ax.get_xlim()
+#     ylim = ax.get_ylim()
+#     X,Y = np.meshgrid(np.arange(xlim[0], xlim[1]), np.arange(ylim[0], ylim[1]))
+#     Z = np.zeros(X.shape)
+#     for r in range(X.shape[0]):
+#         for c in range(X.shape[1]):
+#             Z[r,c] = GlobalZeroPlane[0] * X[r,c] + GlobalZeroPlane[1] * Y[r,c] + GlobalZeroPlane[2]
+#     ax.plot_wireframe(X,Y,Z, color='k')
+
+#     ax.set_xlabel("X (mm)")
+#     ax.set_ylabel("Y (mm)")
+#     ax.set_zlabel("Z (mm)")
+#     ax.set_title("Linearly Interpolated Combined Point Cloud with Global Zero Plane")
+
+# # Plot fully aligned combined point cloud data
 if plot_toggle == "on":
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(RawStackedPointCloud[:, 0], RawStackedPointCloud[:, 1], RawStackedPointCloud[:, 2], marker='.')
-    ax.set_xlabel("X (mm)")
-    ax.set_ylabel("Y (mm)")
-    ax.set_zlabel("Z (mm)")
-    ax.set_title("Raw Combined Point Cloud")
-
-    # Use this view to compare to interpolated combined point cloud
-    ax.view_init(elev=0., azim=0)
-
-# Plot linearly interpolated combined point cloud data
-if plot_toggle == "on":
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
-    ax.set_xlabel("X (mm)")
-    ax.set_ylabel("Y (mm)")
-    ax.set_zlabel("Z (mm)")
-    ax.set_title("Linearly Interpolated Combined Point Cloud")
-
-    # Use this view to compare to raw combined point cloud
-    ax.view_init(elev=0., azim=0)
-
-# Plot linearly interpolated combined point cloud data with corner zero plan data outlined
-if plot_toggle == "on":
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
-    ax.scatter(ZeroPlaneXYCorners[:, 0], ZeroPlaneXYCorners[:, 1], [1, 1, 1, 1], color='red', s=20)
-    ax.scatter(ZeroPlanePoints[:, 0], ZeroPlanePoints[:, 1],  ZeroPlanePoints[:, 2], color='green', s=20)
-    ax.set_xlabel("X (mm)")
-    ax.set_ylabel("Y (mm)")
-    ax.set_zlabel("Z (mm)")
-    ax.set_title("Linearly Interpolated Combined Point Cloud with Corner Zero Plane Data")
-
-    # Use this view to show zero plane data outlines
-    ax.view_init(elev=90., azim=-90)
-
-# Plot linearly interpolated combined point cloud data with global zero plane
-if plot_toggle == "on":
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(CombinedPointCloud[:, 0], CombinedPointCloud[:, 1], CombinedPointCloud[:, 2], marker='.')
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    X,Y = np.meshgrid(np.arange(xlim[0], xlim[1]), np.arange(ylim[0], ylim[1]))
-    Z = np.zeros(X.shape)
-    for r in range(X.shape[0]):
-        for c in range(X.shape[1]):
-            Z[r,c] = GlobalZeroPlane[0] * X[r,c] + GlobalZeroPlane[1] * Y[r,c] + GlobalZeroPlane[2]
-    ax.plot_wireframe(X,Y,Z, color='k')
-
-    ax.set_xlabel("X (mm)")
-    ax.set_ylabel("Y (mm)")
-    ax.set_zlabel("Z (mm)")
-    ax.set_title("Linearly Interpolated Combined Point Cloud with Global Zero Plane")
-
-# Plot fully aligned combined point cloud data
-if plot_toggle == "on":
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(AlignedCombined_PC[:, 0], AlignedCombined_PC[:, 1], AlignedCombined_PC[:, 2], marker='.')
+    ax.scatter(AlignedCombined_PC[:, 0], 
+               AlignedCombined_PC[:, 1], 
+               AlignedCombined_PC[:, 2], marker='.')
 
     ax.set_xlabel("X (mm)")
     ax.set_ylabel("Y (mm)")
     ax.set_zlabel("Z (mm)")
     ax.set_title("Fully Aligned Point Cloud")
 
-    # Use this view to compare to raw combined point cloud
-    ax.view_init(elev=0., azim=0)
+#     # Use this view to compare to raw combined point cloud
+#     ax.view_init(elev=0., azim=0)
 
-# STL Comparison between candidate and reference STL
-mesh_c, mesh_ref, VolDiff, SurfAreaDiff, MaxHausdorffData = STLComparison.Compare('FinalProjectPart_short.stl', 'FinalProjectPart_shorter.stl')
+# # STL Comparison between candidate and reference STL
+# mesh_c, mesh_ref, VolDiff, SurfAreaDiff, MaxHausdorffData = STLComparison.Compare('FinalProjectPart_short.stl', 'FinalProjectPart_shorter.stl')
 
-# Plot STL files
-figure = plt.figure()
-axes = mplot3d.Axes3D(figure)
-axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_c.vectors, alpha=0.1, linewidths=1, facecolors='b'))
-axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_ref.vectors, alpha=0.1, linewidths=1, facecolors='g'))
-axes.plot3D([MaxHausdorffData[1][0], MaxHausdorffData[2][0]], [MaxHausdorffData[1][1], MaxHausdorffData[2][1]], [MaxHausdorffData[1][2], MaxHausdorffData[2][2]], "red")
-scale = mesh_c.points.flatten()
-axes.auto_scale_xyz(scale, scale, scale)
-figure.suptitle("STL Plot")
-axes.set_xlabel("X")
-axes.set_ylabel("Y")
-axes.set_zlabel("Z")
+# # Plot STL files
+# figure = plt.figure()
+# axes = mplot3d.Axes3D(figure)
+# axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_c.vectors, alpha=0.1, linewidths=1, facecolors='b'))
+# axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_ref.vectors, alpha=0.1, linewidths=1, facecolors='g'))
+# axes.plot3D([MaxHausdorffData[1][0], MaxHausdorffData[2][0]], [MaxHausdorffData[1][1], MaxHausdorffData[2][1]], [MaxHausdorffData[1][2], MaxHausdorffData[2][2]], "red")
+# scale = mesh_c.points.flatten()
+# axes.auto_scale_xyz(scale, scale, scale)
+# figure.suptitle("STL Plot")
+# axes.set_xlabel("X")
+# axes.set_ylabel("Y")
+# axes.set_zlabel("Z")
 
-print("STL Comparison Data")
-print("Volume Difference (mm3): ", VolDiff)
-print("Surface Area Difference (mm2): ", SurfAreaDiff)
-print("Maximum Hausdorff Distance (mm): ", MaxHausdorffData[0])
+# print("STL Comparison Data")
+# print("Volume Difference (mm3): ", VolDiff)
+# print("Surface Area Difference (mm2): ", SurfAreaDiff)
+# print("Maximum Hausdorff Distance (mm): ", MaxHausdorffData[0])
 
 plt.show()
-

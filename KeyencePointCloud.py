@@ -62,7 +62,7 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
             InterpolatedCloud.append([InterpX[i+1], InterpY[i+1], InterpZ[i+1]])
 
     # Print number of interpolated points
-    print("Number of Interpolated Points: ", len(InterpolatedCloud))
+    # print("Number of Interpolated Points: ", len(InterpolatedCloud))
 
     # Add InterpolatedCloud to PC_Data
     PC_Data.append(InterpolatedCloud)
@@ -92,13 +92,13 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
 
     # Print number of repeated points
     Num_Repeat = len(np.where(Stacked_PC[:, 2] == -1)[0])
-    print("Number of Removed Repeated Points: ", Num_Repeat)
+    # print("Number of Removed Repeated Points: ", Num_Repeat)
 
     # Delete all rows with Z = -1 (higher value from repeated rows)
     InterpolatedCombined_PC = np.delete(Stacked_PC, np.where(Stacked_PC[:, 2] == -1)[0], axis=0)
 
     # Print final number of combined point cloud points
-    print("Number of Combined Point Clouds pts: ", len(InterpolatedCombined_PC))
+    # print("Number of Combined Point Clouds pts: ", len(InterpolatedCombined_PC))
     ###############################################################################################
 
     ##############################################################################################
@@ -174,7 +174,7 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
             CornerPlaneData.append(fit)
 
     # Print total number of zero plane points
-    print("Number of zero plane points: ", len(ZeroPlanePoints))
+    # print("Number of zero plane points: ", len(ZeroPlanePoints))
 
     # Calculate global zero plane coefficients by averaging results from corner plane fits
     CornerPlaneData = np.vstack(CornerPlaneData)
@@ -191,18 +191,18 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
     GlobalAngleZ = np.arccos(GlobalNorm[2])
 
     # Print zero plane data
-    print("Zero Plane Norm: ", GlobalNorm)
-    print("X Axis Rotation: ", GlobalAngleX)
-    print("Y Axis Rotation: ", GlobalAngleY)
-    print("Z Axis Rotation: ", GlobalAngleZ)
+    # print("Zero Plane Norm: ", GlobalNorm)
+    # print("X Axis Rotation: ", GlobalAngleX)
+    # print("Y Axis Rotation: ", GlobalAngleY)
+    # print("Z Axis Rotation: ", GlobalAngleZ)
 
     # Calculate full rotation matrix. Assume rotations follow order of X, Y, Z axes (ie X' = Rz*Ry*Rx*X)
     R_x = np.array([1, 0, 0, 0, np.cos(-GlobalAngleX), -np.sin(-GlobalAngleX), 0, np.sin(-GlobalAngleX), np.cos(-GlobalAngleX)]).reshape((3, 3))
-    print("R_x: \n", R_x)
+    # print("R_x: \n", R_x)
     R_y = np.array([np.cos(-GlobalAngleY), 0, np.sin(-GlobalAngleY), 0, 1, 0, -np.sin(-GlobalAngleY), 0, np.cos(-GlobalAngleY)]).reshape((3, 3))
-    print("R_y: \n", R_y)
+    # print("R_y: \n", R_y)
     R_z = np.array([np.cos(-GlobalAngleZ), -np.sin(-GlobalAngleZ), 0, np.sin(-GlobalAngleZ), np.cos(-GlobalAngleZ), 0, 0, 0, 1]).reshape((3, 3))
-    print("R_z: \n", R_z)
+    # print("R_z: \n", R_z)
 
     R_full = np.matmul(R_x, R_y)
     R_full = np.matmul(R_z, R_full)
@@ -213,7 +213,9 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
     # Transform InterpolatedCombined_PC down by average Z value of ZeroPlanePoints
     Z_avg = np.average(ZeroPlanePoints[:, 2])
 
-    AlignedCombined_PC = np.column_stack((RotatedCombined_PC[:, 0], RotatedCombined_PC[:, 1], RotatedCombined_PC[:, 2]-Z_avg))
+    AlignedCombined_PC = np.column_stack((RotatedCombined_PC[:, 0], 
+                                          RotatedCombined_PC[:, 1], 
+                                          RotatedCombined_PC[:, 2]-Z_avg))
     ###############################################################################################
 
     return RawStacked_PC, InterpolatedCombined_PC, ZeroPlaneXYCorners, ZeroPlanePoints, GlobalZeroPlane, AlignedCombined_PC
@@ -234,9 +236,9 @@ def ZeroPlaneFit(FitData, corner, plot_toggle):
     errors = b - A * fit
     residual = np.linalg.norm(errors)
 
-    print("Fitted Plane for XY Corner: ({}, {})".format(corner[0], corner[1]))
-    print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
-    print("residual:", residual)
+    # print("Fitted Plane for XY Corner: ({}, {})".format(corner[0], corner[1]))
+    # print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
+    # print("residual:", residual)
 
     # Plot fitted plane
     if plot_toggle == "on":

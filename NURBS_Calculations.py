@@ -3,13 +3,13 @@ from NURBS_C import tensor_product
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import time
-from stl import mesh
 from scipy.spatial import Delaunay
+import winsound
 
 class NURBS():
     points={}
-    def __init__(self,point_cloud,num_u,num_w,data_dims,
-                 u_order=3,w_order=3,reshape=True,factor=1):
+    def __init__(self,point_cloud,num_u,num_w,u_order=3,w_order=3,
+                 reshape=False,factor=1,data_dims=[50,50],parse=False):
         '''Used to store the point cloud data and eventually 
         calculate the NURBS surface.
         Takse as initialization:
@@ -19,12 +19,15 @@ class NURBS():
             u_order/w_order: order of curve in u/w direction,
                              nominally 4
         '''
-        self._extract_data(point_cloud,data_dims,reshape,factor)
+        if reshape:
+            self._extract_data(point_cloud,data_dims,reshape,factor,parse)
+        else:
+            self.control_points=point_cloud
         self.u_order=u_order
         self.w_order=w_order
         self.num_u,self.num_w=num_u,num_w
         
-    def _extract_data(self,point_cloud,data_dims,reshape,factor):
+    def _extract_data(self,point_cloud,data_dims,reshape,factor,parse):
         '''extract the point cloud data into the x,y, and z values'''
         print('Extracting a portion of the data to fit')
         #if need be pare the data down to a more resaonable number of values
@@ -35,7 +38,7 @@ class NURBS():
         #need to pad the values in order to reshape nicely
         control_u=data_dims[0]
         control_w=data_dims[1]
-        if reshape:
+        if parse:
             pad=abs(len(x)-control_u*control_w) if \
                 len(x)<control_u*control_w else 0
             
@@ -70,17 +73,22 @@ class NURBS():
             t=np.array([i/max(t) for i in t])
             return t
 
-    def nurbs_calc(self,weight=None):
+    def nurbs_calc(self,weight=[1]):
         #the order of the function 
         ku=self.u_order
         kw=self.w_order
         #get the number of control points in each direction
         #n= num in u and m= num in w
         n,m=np.shape(self.control_points)[1::]
+        scale=1
         #generate the u and w vectors
         u=np.linspace(0,n-ku,self.num_u)
         w=np.linspace(0,m-kw,self.num_w)
-        # weight=np.ones([n,m])
+        if len(weight)==1:
+            weight=np.ones([n,m])       
+            for i in range(n):
+                for j in range(m):
+                    weight[i][j]*=(scale*(i**3+1)*(j**0.5+1))
         #unpack the control points for easier use
         xc,yc,zc=self.control_points
         #get the p and w knot vectors here so as to not recalc them
@@ -92,17 +100,18 @@ class NURBS():
         #compute the tensor product/get the surface
         print('Beginning to calculate tensor product')
         s=time.time()
-        output=np.asarray(tensor_product(xc,yc,zc,u,w,n,m,ku,kw,
+        output=np.asarray(tensor_product(xc,yc,zc,weight,u,w,n,m,ku,kw,
                               knot_u,knot_w,output))
+        winsound.MessageBeep()
         print('Calculated tensor product in {:.2f}s'.format(time.time()-s))
         self.points['nurbs']=output
         self.output=output
-        return self.output
+        return self.output,weight
     
     def save_stl(self,file_name):
         print('Generating stl file')
         s=time.time()
-        def _writer(vec1,vec2,vec3,surf_norm,file):
+        def _writer(vec1,vec2,vec3,surf_norm,f):
             f.write('facet normal {:.7f} {:.7f} {:.7f}\n'.format(*n))
             f.write('outer loop\n')
             f.write('vertex {:.7f} {:.7f} {:.7f}\n'.format(*p1))
@@ -174,8 +183,9 @@ if __name__=='__main__':
         z.append(float(line[3]))
     x,y,z=np.array(x),np.array(y),np.array(z)
     num=20
-    nurbs=NURBS(np.column_stack([x,y,z]),num,num+10,[8,8],3,3,False)
-    output=nurbs.nurbs_calc()
+    nurbs=NURBS(np.column_stack([x,y,z]),num,num+10,
+                data_dims=[8,8],parse=False,reshape=True)
+    output,weight=nurbs.nurbs_calc()
     vecs,points=nurbs.save_stl('tester.stl')
     fig,ax=nurbs.plot_surfaces('nurbs',1,'nurbs')
     nurbs.plot_points('reduced data', plot_title='data',fig=fig,ax=ax)

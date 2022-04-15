@@ -31,7 +31,7 @@ class Surface_Parser():
         self.stored['2d data']=[x2d,y2d,z2d]
         return x2d,y2d,z2d
     
-    def interpolation2d(self,adjusted_weight=1e-10,no_adjust_weight=100):
+    def interpolation2d(self,adjusted_weight=1,no_adjust_weight=10):
         x,y,z=self.stored['2d data']
         #get the longer row first
         lenth=0
@@ -61,17 +61,29 @@ class Surface_Parser():
                     new_z[closed_index]=z[i][k]
                     adjusted_points.append(closed_index)
                 for h in range(len(new_x)):
+                    # if new_z[h]==0:
+                    #     weights[i][h]=adjusted_weight
+                    # else:
+                    #     weights[i][h]=no_adjust_weight
                     if h in adjusted_points:
-                        weights[i][h]=adjusted_weight
-                    else:
                         weights[i][h]=no_adjust_weight
+                    else:
+                        weights[i][h]=adjusted_weight
                 self.write_output(new_x, new_y, new_z, i)
             else:
                 self.write_output(x[i], y[i], z[i], i)
                 for v in range(len(x[i])):
                     weights[i][v]=no_adjust_weight
-        self.stored['adjusted points']=self.output
-        return self.output,weights
+                    
+        #reorder the data to be linear in x
+        index_sorted=self.output[0][:,0].argsort()
+        self.sorted_output=np.array([
+            self.output[0][index_sorted],
+            self.output[1][index_sorted],
+            self.output[2][index_sorted]])
+        sorted_weights=np.array(weights[index_sorted])
+        self.stored['adjusted points']=self.sorted_output
+        return self.sorted_output,sorted_weights
     
     def write_output(self,x,y,z,loc):
         for j in range(len(x)):
@@ -82,9 +94,95 @@ class Surface_Parser():
     def _find_closeset_value(self,new_y,old_y):
         return np.abs(new_y-old_y).argmin()
     
-    def plot_surfaces(self,plot_name,fig_num=None,plot_title=None,ax=None):
+    def neighborhood_z_approx(self,z):
+        '''Returns an array of shape z having filled
+        as many possible values of z if deems fit. 
+        Takes a weighted sum of the six points closest.
+        '''
+        size=z.size
+        while size-np.count_nonzero(z)>0:
+            for i in range(len(z)):
+                for j in range(len(z[i])):
+                    z_point=z[i][j]
+                    if z_point==0:
+                        z[i][j]=self._nearest_z_values(z,i,j)
+                    else:
+                        z[i][j]=z[i][j]
+        self.output[2]=z
+        return z
+    def _nearest_z_values(self,z,i,j):
+        neighbors=[]
+        if i!=0 and i!=len(z)-1:
+            if j!=0 and j!=len(z[i])-1:
+                neighbors.append(z[i-1][j-1]) if z[i-1][j-1]!=0 else 0
+                neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+                neighbors.append(z[i-1][j+1]) if z[i-1][j+1]!=0 else 0
+                
+                neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+                neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+                
+                neighbors.append(z[i+1][j-1]) if z[i+1][j-1]!=0 else 0
+                neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+                neighbors.append(z[i+1][j+1]) if z[i+1][j+1]!=0 else 0
+            elif j!=0 and j==len(z[i])-1:
+                neighbors.append(z[i-1][j-1]) if z[i-1][j-1]!=0 else 0
+                neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+                
+                neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+                
+                neighbors.append(z[i+1][j-1]) if z[i+1][j-1]!=0 else 0
+                neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+                
+            else:
+                neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+                neighbors.append(z[i-1][j+1]) if z[i-1][j+1]!=0 else 0
+                
+                neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+                
+                neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+                neighbors.append(z[i+1][j+1]) if z[i+1][j+1]!=0 else 0
+        elif i==0 and j==0:
+            #ul corner
+            neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+            neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+            neighbors.append(z[i+1][j+1]) if z[i+1][j+1]!=0 else 0   
+        elif i==0 and j!=0 and j!=len(z[i])-1:
+            neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+            neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+            
+            neighbors.append(z[i+1][j-1]) if z[i+1][j-1]!=0 else 0
+            neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+            neighbors.append(z[i+1][j+1]) if z[i+1][j+1]!=0 else 0
+        elif i==0 and j==len(z[i])-1:
+            #ur corner
+            neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+            neighbors.append(z[i+1][j-1]) if z[i+1][j-1]!=0 else 0
+            neighbors.append(z[i+1][j]) if z[i+1][j]!=0 else 0
+        elif i==len(z)-1 and j==0:
+            #ll corner
+            neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+            neighbors.append(z[i-1][j+1]) if z[i-1][j+1]!=0 else 0
+            neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+        elif i==len(z)-1 and j==len(z[i])-1:
+            #lr corner
+            neighbors.append(z[i-1][j-1]) if z[i-1][j-1]!=0 else 0
+            neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+            neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+        else:
+            neighbors.append(z[i-1][j-1]) if z[i-1][j-1]!=0 else 0
+            neighbors.append(z[i-1][j]) if z[i-1][j]!=0 else 0
+            neighbors.append(z[i-1][j+1]) if z[i-1][j+1]!=0 else 0
+            
+            neighbors.append(z[i][j+1]) if z[i][j+1]!=0 else 0
+            neighbors.append(z[i][j-1]) if z[i][j-1]!=0 else 0
+        if len(neighbors)>2:
+            return np.average(neighbors)
+        else:
+            return 0
+    
+    def plot_surfaces(self,plot_name,fig_num=None,plot_title=None,ax=None,fig=None):
         point_cloud=self.stored[plot_name]
-        if fig_num!=None:
+        if ax==None:
             fig=plt.figure(fig_num)
             ax=plt.axes(projection='3d')
         ax.plot_surface(point_cloud[0],point_cloud[1],

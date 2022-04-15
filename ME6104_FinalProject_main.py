@@ -71,16 +71,22 @@ RawStackedPointCloud, CombinedPointCloud, ZeroPlaneXYCorners, ZeroPlanePoints, G
 
 #parse the data and realign it to make a nice shaped array
 parser=SP(AlignedCombined_PC)
-_,_,_=parser.convert_2d(11.0)#set the hieght point to the trigger
+parser.convert_2d(11.0)#set the hieght point to the trigger
+
 #currently only just sets the closest do to sparcity of the data
-new_points,weights=parser.interpolation2d() 
+new_points,weights=parser.interpolation2d()
+parser.plot_surfaces('adjusted points',plot_title='Before neighbor approximation') 
+_,_,zs=new_points
+new_z=parser.neighborhood_z_approx(zs)
+parser.plot_surfaces('adjusted points',plot_title='After neighbor approximation') 
+
 #number of evaluation points
 numu,numw=50,50
 nurbs=NURBS(new_points,numu,numw,3,3)
 #get the tensor product
 output=nurbs.nurbs_calc(weights)
 #save the stl
-nurbs.save_stl('output.stl')
+# nurbs.save_stl('output.stl')
 #plot the final nurbs surface
 fig,ax=nurbs.plot_surfaces('nurbs',1,'NURBS surface')
 fig.savefig('NURBS_Fit.png',dpi=600)

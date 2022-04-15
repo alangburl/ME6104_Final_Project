@@ -118,8 +118,10 @@ class NURBS():
             f.write('vertex {:.7f} {:.7f} {:.7f}\n'.format(*p2))
             f.write('vertex {:.7f} {:.7f} {:.7f}\n'.format(*p3))
             f.write('endloop \nendfacet\n')
-        if 'output' not in globals():
-            print('Must calculate surface first')
+
+        if 'output' not in self.__dict__:
+            print('NURBS must be generated first')
+            return 0,0
         else:
             f=open(file_name,'w')
             f.write('solid\n')
@@ -140,8 +142,8 @@ class NURBS():
                 #sent it to the writer
                 _writer(p1,p2,p3,n,f)
             f.close()
-        print('Finished generating stl file in {:.2f}s'.format(time.time()-s))
-        return vecs,vectors
+            print('Finished generating stl file in {:.2f}s'.format(time.time()-s))
+            return vecs,vectors
     
     #a set of plotting tools to plot the data generated
     def plot_surfaces(self,plot_name,fig_num=None,plot_title=None,ax=None):

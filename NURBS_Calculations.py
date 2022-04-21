@@ -93,7 +93,7 @@ class NURBS():
         xc,yc,zc=self.control_points
         #get the p and w knot vectors here so as to not recalc them
         knot_u,knot_w=self._knot(ku,n)*(n-ku),self._knot(kw,m)*(m-kw)
-        #initiate the output 
+        #initiate the output
         output=np.array([np.zeros([self.num_u,self.num_w]),
                 np.zeros([self.num_u,self.num_w]),
                 np.zeros([self.num_u,self.num_w])])
@@ -108,10 +108,13 @@ class NURBS():
         self.output=output
         return self.output,weight
     
-    def save_stl(self,file_name):
+    def save_stl(self,file_name,exclusion_height=2):
+        '''adapted from 
+        https://www.mathworks.com/matlabcentral/fileexchange/4512-surf2stl
+        '''
         print('Generating stl file')
         s=time.time()
-        def _writer(vec1,vec2,vec3,surf_norm,f):
+        def _writer(p1,p2,p3,n,f):
             f.write('facet normal {:.7f} {:.7f} {:.7f}\n'.format(*n))
             f.write('outer loop\n')
             f.write('vertex {:.7f} {:.7f} {:.7f}\n'.format(*p1))
@@ -125,25 +128,27 @@ class NURBS():
         else:
             f=open(file_name,'w')
             f.write('solid\n')
-            xc,yc,zc=self.output
-            xflat,yflat,zflat=xc.flatten(),yc.flatten(),zc.flatten()
-            vectors=np.array([xflat,yflat,zflat]).T
-            #compute the tesslation of the points to save:
-            vecs=Delaunay(vectors)
-            vertice_index=vecs.simplices
-            for i in range(vertice_index.shape[0]):
-                p=vertice_index[i]
-                p1=np.array([xflat[p[0]], yflat[p[0]], zflat[p[0]]])
-                p2=np.array([xflat[p[1]], yflat[p[1]], zflat[p[1]]])
-                p3=np.array([xflat[p[2]], yflat[p[2]], zflat[p[2]]])
-                #get the surface unit normal at the triangle
-                cross=np.cross(p2-p1,p3-p1)
-                n=cross/np.linalg.norm(cross)
-                #sent it to the writer
-                _writer(p1,p2,p3,n,f)
+            x,y,z=self.output
+            
+            for i in range(len(z)-1):
+                for j in range(len(z[i])-1):
+                    p1=np.array([x[i][j],y[i][j],z[i][j]])
+                    p2=np.array([x[i][j+1],y[i][j+1],z[i][j+1]])
+                    p3=np.array([x[i+1][j+1],y[i+1][j+1],z[i+1][j+1]])
+                    cross=np.cross(p2-p1,p3-p1)
+                    n=cross/np.linalg.norm(cross)
+                    _writer(p1, p2, p3, n, f)
+                    
+                    p3=np.array([x[i][j],y[i][j],z[i][j]])
+                    p2=np.array([x[i+1][j],y[i+1][j],z[i+1][j]])
+                    p1=np.array([x[i+1][j+1],y[i+1][j+1],z[i+1][j+1]])
+                    cross=np.cross(p2-p1,p3-p1)
+                    n=cross/np.linalg.norm(cross)
+                    _writer(p1, p2, p3, n, f)
+            f.write('endsolid output')
             f.close()
             print('Finished generating stl file in {:.2f}s'.format(time.time()-s))
-            return vecs,vectors
+            # return vecs,vectors
     
     #a set of plotting tools to plot the data generated
     def plot_surfaces(self,plot_name,fig_num=None,plot_title=None,ax=None):
@@ -188,9 +193,9 @@ if __name__=='__main__':
     nurbs=NURBS(np.column_stack([x,y,z]),num,num+10,
                 data_dims=[8,8],parse=False,reshape=True)
     output,weight=nurbs.nurbs_calc()
-    vecs,points=nurbs.save_stl('tester.stl')
+    nurbs.save_stl('tester.stl')
     fig,ax=nurbs.plot_surfaces('nurbs',1,'nurbs')
-    nurbs.plot_points('reduced data', plot_title='data',fig=fig,ax=ax)
+    nurbs.plot_points('reduced data', plot_title='NURBS verification',fig=fig,ax=ax)
     fig.savefig('TestData.png')
     plt.show()
     xo,yo,zo=output

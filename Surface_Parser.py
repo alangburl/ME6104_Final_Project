@@ -31,7 +31,7 @@ class Surface_Parser():
         self.stored['2d data']=[x2d,y2d,z2d]
         return x2d,y2d,z2d
     
-    def interpolation2d(self,adjusted_weight=1,no_adjust_weight=10):
+    def interpolation2d(self,adjusted_weight=1e-3,no_adjust_weight=10):
         x,y,z=self.stored['2d data']
         #get the longer row first
         lenth=0

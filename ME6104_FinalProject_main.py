@@ -4,11 +4,17 @@ import KeyencePointCloud
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from stl import mesh
-
+import time
 from NURBS_Calculations import NURBS
 from Surface_Parser import Surface_Parser as SP
 # Define file/filepath of point cloud data in CSV form
 import STLComparison
+
+from stl import mesh
+ProgramStartTime = time.time()
+
+# Start program timer
+
 
 CSV_1 = 'Z3_48.csv'
 CSV_2 = 'Z3_71.csv'
@@ -17,7 +23,7 @@ CSV_2 = 'Z3_71.csv'
 Z_offset_mm = 0.23*25.4
 
 # Define resolution multiplier. This has the effect of reducing the data resolution by a factor of n
-n_res = 32
+n_res = 96
 
 # Define resolution to use from scan data. Lower resolution --> less accuracy but less processing time
 Res_mm = 0.0125*n_res
@@ -66,30 +72,9 @@ if plot_toggle == "on":
     ax.set_ylabel("Y (mm)")
     ax.set_zlabel("Z (mm)")
     ax.set_title("Point Cloud 2, Z: 5.8")
+
 # Combine scans to form one point cloud that is aligned to point cloud.
 RawStackedPointCloud, CombinedPointCloud, ZeroPlaneXYCorners, ZeroPlanePoints, GlobalZeroPlane, AlignedCombined_PC = KeyencePointCloud.CombinePC([PointCloud1, PointCloud2], n_interpolate, tol_interpolate, d_zero_plane, plot_toggle)
-
-#parse the data and realign it to make a nice shaped array
-parser=SP(AlignedCombined_PC)
-parser.convert_2d(11.0)#set the hieght point to the trigger
-
-#currently only just sets the closest do to sparcity of the data
-new_points,weights=parser.interpolation2d()
-parser.plot_surfaces('adjusted points',plot_title='Before neighbor approximation') 
-_,_,zs=new_points
-new_z=parser.neighborhood_z_approx(zs)
-parser.plot_surfaces('adjusted points',plot_title='After neighbor approximation') 
-
-#number of evaluation points
-numu,numw=50,50
-nurbs=NURBS(new_points,numu,numw,3,3)
-#get the tensor product
-output=nurbs.nurbs_calc(weights)
-#save the stl
-# nurbs.save_stl('output.stl')
-#plot the final nurbs surface
-fig,ax=nurbs.plot_surfaces('nurbs',1,'NURBS surface')
-fig.savefig('NURBS_Fit.png',dpi=600)
 
 # Plot raw combined point cloud data
 if plot_toggle == "on":
@@ -155,8 +140,8 @@ if plot_toggle == "on":
 if plot_toggle == "on":
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(AlignedCombined_PC[:, 0], 
-                AlignedCombined_PC[:, 1], 
+    ax.scatter(AlignedCombined_PC[:, 0],
+                AlignedCombined_PC[:, 1],
                 AlignedCombined_PC[:, 2], marker='.')
 
     ax.set_xlabel("X (mm)")
@@ -167,25 +152,55 @@ if plot_toggle == "on":
     # Use this view to compare to raw combined point cloud
     # ax.view_init(elev=0., azim=0)
 
+#parse the data and realign it to make a nice shaped array
+parser=SP(AlignedCombined_PC)
+parser.convert_2d(11.0)#set the hieght point to the trigger
+
+#currently only just sets the closest do to sparcity of the data
+new_points,weights=parser.interpolation2d()
+# parser.plot_surfaces('adjusted points',1,plot_title='Before neighbor approximation')
+_,_,zs=new_points
+new_z=parser.neighborhood_z_approx(zs)
+# parser.plot_surfaces('adjusted points',2,plot_title='After neighbor approximation')
+
+#number of evaluation points
+numu,numw=10,10
+u_order, w_order = 4, 4
+nurbs=NURBS(new_points,numu,numw,u_order, w_order)
+#get the tensor product
+output=nurbs.nurbs_calc(weights)
+#save the
+nurbs.save_stl('output.stl',2)
+#plot the final nurbs surface
+# fig,ax=nurbs.plot_surfaces('nurbs',3,'NURBS surface')
+# fig.savefig('NURBS_Fit.png',dpi=600)
+
 # STL Comparison between candidate and reference STL
-# mesh_c, mesh_ref, VolDiff, SurfAreaDiff, MaxHausdorffData = STLComparison.Compare('FinalProjectPart_short.stl', 'FinalProjectPart_shorter.stl')
+mesh_c, mesh_ref, VolDiff, SurfAreaDiff, MaxHausdorffData = STLComparison.Compare(STL_c='output.stl', STL_ref='FinalProjectPart_shorter.stl')
 
 # Plot STL files
-# figure = plt.figure()
-# axes = mplot3d.Axes3D(figure)
-# axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_c.vectors, alpha=0.1, linewidths=1, facecolors='b'))
-# axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_ref.vectors, alpha=0.1, linewidths=1, facecolors='g'))
-# axes.plot3D([MaxHausdorffData[1][0], MaxHausdorffData[2][0]], [MaxHausdorffData[1][1], MaxHausdorffData[2][1]], [MaxHausdorffData[1][2], MaxHausdorffData[2][2]], "red")
-# scale = mesh_c.points.flatten()
-# axes.auto_scale_xyz(scale, scale, scale)
-# figure.suptitle("STL Plot")
-# axes.set_xlabel("X")
-# axes.set_ylabel("Y")
-# axes.set_zlabel("Z")
+figure = plt.figure()
+axes = mplot3d.Axes3D(figure)
+axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_c.vectors, alpha=0.3, linewidths=1, facecolors='b'))
+axes.add_collection3d(mplot3d.art3d.Poly3DCollection(mesh_ref.vectors, alpha=0.6, linewidths=1, facecolors='g'))
+axes.plot3D([MaxHausdorffData[1][0], MaxHausdorffData[2][0]], [MaxHausdorffData[1][1], MaxHausdorffData[2][1]], [MaxHausdorffData[1][2], MaxHausdorffData[2][2]], "red")
+scale = mesh_c.points.flatten()
+axes.auto_scale_xyz(scale, scale, scale)
+figure.suptitle("STL Plot")
+axes.set_xlabel("X")
+axes.set_ylabel("Y")
+axes.set_zlabel("Z")
 
-# print("STL Comparison Data")
-# print("Volume Difference (mm3): ", VolDiff)
-# print("Surface Area Difference (mm2): ", SurfAreaDiff)
-# print("Maximum Hausdorff Distance (mm): ", MaxHausdorffData[0])
+print("STL Comparison Data")
+print("Volume Difference: {:.2f} mm3".format(VolDiff))
+print("Surface Area Difference: {:.2f} mm2".format(SurfAreaDiff))
+print("Maximum Hausdorff Distance: {:.2f} mm".format(MaxHausdorffData[0]))
 
+print("Optimization Input Parameters")
+print("NURBS Evaluation Points: ", numw)
+print("NURBS Order: ", w_order)
+print("Scan resolution: {:.2f} mm".format(Res_mm))
+
+
+print("\nElapsed Program Time: {:.2f}s".format(time.time()-ProgramStartTime))
 plt.show()

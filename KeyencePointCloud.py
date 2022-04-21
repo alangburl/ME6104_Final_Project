@@ -198,11 +198,11 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
 
     # Calculate full rotation matrix. Assume rotations follow order of X, Y, Z axes (ie X' = Rz*Ry*Rx*X)
     R_x = np.array([1, 0, 0, 0, np.cos(-GlobalAngleX), -np.sin(-GlobalAngleX), 0, np.sin(-GlobalAngleX), np.cos(-GlobalAngleX)]).reshape((3, 3))
-    print("R_x: \n", R_x)
+    # print("R_x: \n", R_x)
     R_y = np.array([np.cos(-GlobalAngleY), 0, np.sin(-GlobalAngleY), 0, 1, 0, -np.sin(-GlobalAngleY), 0, np.cos(-GlobalAngleY)]).reshape((3, 3))
-    print("R_y: \n", R_y)
+    # print("R_y: \n", R_y)
     R_z = np.array([np.cos(-GlobalAngleZ), -np.sin(-GlobalAngleZ), 0, np.sin(-GlobalAngleZ), np.cos(-GlobalAngleZ), 0, 0, 0, 1]).reshape((3, 3))
-    print("R_z: \n", R_z)
+    # print("R_z: \n", R_z)
 
     R_full = np.matmul(R_x, R_y)
     R_full = np.matmul(R_z, R_full)
@@ -216,6 +216,8 @@ def CombinePC(PC_Data, n_interpolate, tol_interpolate, d_zero_plane, plot_toggle
     AlignedCombined_PC = np.column_stack((RotatedCombined_PC[:, 0], 
                                           RotatedCombined_PC[:, 1], 
                                           RotatedCombined_PC[:, 2]-Z_avg))
+
+    # Get rid of flat surface parts
     ###############################################################################################
 
     return RawStacked_PC, InterpolatedCombined_PC, ZeroPlaneXYCorners, ZeroPlanePoints, GlobalZeroPlane, AlignedCombined_PC
@@ -236,9 +238,9 @@ def ZeroPlaneFit(FitData, corner, plot_toggle):
     errors = b - A * fit
     residual = np.linalg.norm(errors)
 
-    print("Fitted Plane for XY Corner: ({}, {})".format(corner[0], corner[1]))
-    print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
-    print("residual:", residual)
+    # print("Fitted Plane for XY Corner: ({}, {})".format(corner[0], corner[1]))
+    # print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
+    # print("residual:", residual)
 
     # Plot fitted plane
     if plot_toggle == "on":
